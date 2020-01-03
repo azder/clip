@@ -1,0 +1,128 @@
+import T from '../etc/token.js';
+import {fix$, func} from '../util/function.js';
+import {cmdOf, optOf} from './parse/field.js';
+import {pk$, tk$} from './parse/tkpk.js';
+import {string} from '../util/string.js';
+
+const negated = (name => string(name).startsWith('no'));
+
+const P = Object.freeze({
+    cmd: 'cmd',
+    opt: 'opt',
+});
+
+
+const wrap = (
+    (name, fn) => ($, ...$$) => {
+
+        const tk = tk$($);
+        const pk = pk$($);
+
+        console.log('WRAP', name, tk.val, pk.val);
+        fn({...$, tk, pk, val: tk.val, done: tk.done, peek: pk.val}, ...$$);
+
+        return $;
+    }
+);
+
+
+const handleOption = (
+    ($, opt) => {
+
+        if (Boolean === opt.type) {
+            return !negated(opt.name);
+        }
+
+        if (Number === opt.type) {
+            return `number:${pk$($).val}`;
+        }
+
+        return 'ass$(ast, {[val]: opt})';
+    }
+);
+
+const handleCommand = wrap('handleCommand',
+    $ => {
+
+        const {tk, ast, cfg, val, done, err$} = $;
+        const test = {cfg, val};
+
+        const cmd = cmdOf(test);
+        if (cmd) {
+            $ = handleCommand({...$, cfg: cmd});
+        }
+
+        const opt = optOf(test);
+        if (opt) {
+            return handleOption($);
+        }
+
+        return done ? ast : err$(tk);
+    },
+);
+
+const parseWord = wrap('parseWord',
+    $ => {
+
+        const {val, cfg} = $;
+        const cmd = cmdOf({cfg, val});
+
+        if (cmd) {
+            handleCommand({...$, cfg: cmd});
+        } else {
+            handleOption($);
+        }
+
+    },
+);
+
+const parseOption = wrap('parseOption',
+    $ => {
+
+        const {done, err$, tk} = $;
+        const opt = optOf($);
+
+        const result = opt ? handleOption($, opt) : (!done && err$(tk));
+        console.log('parseOption()', {result});
+
+    },
+);
+
+
+const start = wrap('start',
+    $ => {
+
+        const {val, done, tk, err$} = $;
+        if (T.wrd === val) {
+            $.state = P.cmd;
+            return parseWord($);
+        }
+
+        if (T.dbl === val || T.min) {
+            $.state = P.opt;
+            return parseOption($);
+        }
+
+        return !done && err$(tk);
+
+    },
+);
+
+
+export default (
+
+    function parser$(options = {}) {
+
+        // return [...options.lex].map($ => $.val);
+
+        return start({
+            cfg:  options.cfg,
+            lex:  options.lex,
+            ast:  {},
+            log$: fix$(options.log$, '>', 'parser$'),
+            err$: func(options.error$),
+        });
+
+    }
+
+);

@@ -1,0 +1,27 @@
+{
+  "name": "clip",
+  "version": "0.0.1",
+  "description": "",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "jest",
+    "test:dev": "jest --watch",
+    "test:cov": "jest --coverage"
+  },
+  "author": "azder",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azder/clip.git"
+  },
+  "devDependencies": {
+    "@azhder/eslint-config-azder": "0.0.7",
+    "@babel/preset-env": "^7.7.6",
+    "eslint": "^6.7.2",
+    "jest": "^24.9.0",
+    "jest-extended": "^0.11.2"
+  },
+  "engines": {
+    "node": ">=13.2"
+  }
+}
